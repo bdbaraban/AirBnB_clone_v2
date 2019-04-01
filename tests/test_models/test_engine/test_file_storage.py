@@ -96,16 +96,24 @@ class TestFileStorage(unittest.TestCase):
         self.assertTrue(hasattr(FileStorage, "all"))
         self.assertTrue(hasattr(FileStorage, "new"))
         self.assertTrue(hasattr(FileStorage, "reload"))
+        self.assertTrue(hasattr(FileStorage, "delete"))
 
     def test_init(self):
         """Test initialization."""
         self.assertTrue(isinstance(models.storage, FileStorage))
 
     def test_all(self):
-        """Test all method."""
+        """Test defualt all method."""
         obj = models.storage.all()
         self.assertEqual(type(obj), dict)
         self.assertIs(obj, FileStorage._FileStorage__objects)
+
+    def test_all_cls(self):
+        """Test all method with specified cls."""
+        obj = models.storage.all(BaseModel)
+        self.assertEqual(type(obj), dict)
+        self.assertEqual(len(obj), 1)
+        self.assertEqual(self.base, list(obj.values())[0])
 
     def test_new(self):
         """Test new method."""
@@ -159,6 +167,18 @@ class TestFileStorage(unittest.TestCase):
             models.storage.reload()
         except Exception:
             self.fail
+
+    def test_delete(self):
+        """Test delete method."""
+        bm = BaseModel()
+        models.storage.new(bm)
+        models.storage.delete(bm)
+        self.assertNotIn(bm, models.storage.all(BaseModel))
+
+    def test_delete_nonexistant(self):
+        """Test delete method with a nonexistent object."""
+        models.storage.delete(BaseModel())
+        self.assertEqual(len(models.storage.all(BaseModel)), 1)
 
 
 if __name__ == "__main__":

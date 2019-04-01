@@ -85,6 +85,7 @@ class TestFileStorage(unittest.TestCase):
         self.assertIsNotNone(FileStorage.all.__doc__)
         self.assertIsNotNone(FileStorage.new.__doc__)
         self.assertIsNotNone(FileStorage.reload.__doc__)
+        self.assertIsNotNone(FileStorage.delete.__doc__)
 
     def test_attributes(self):
         """Check for attributes."""

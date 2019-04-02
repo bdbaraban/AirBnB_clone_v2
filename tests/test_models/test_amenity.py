@@ -71,7 +71,6 @@ class TestAmenity(unittest.TestCase):
     def test_init(self):
         """Test initialization."""
         self.assertTrue(isinstance(self.amenity, Amenity))
-        self.assertIn(self.amenity, models.storage.all().values())
 
     def test_two_models_are_unique(self):
         """Test that different Amenity instances are unique."""

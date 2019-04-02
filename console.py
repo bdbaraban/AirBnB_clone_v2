@@ -141,8 +141,8 @@ class HBNBCommand(cmd.Cmd):
         """Usage: all or all <class> or <class>.all()
         Display string representations of all instances of a given class.
         If no class is specified, displays all instantiated objects."""
-        o = storage.all()
         if not line:
+            o = storage.all()
             print([o[k].__str__() for k in o])
             return
         try:
@@ -150,7 +150,8 @@ class HBNBCommand(cmd.Cmd):
             if args[0] not in self.__classes:
                 raise NameError()
 
-            print([o[k].__str__() for k in o if k.split(".")[0] == args[0]])
+            o = storage.all(eval(args[0]))
+            print([o[k].__str__() for k in o])
 
         except NameError:
             print("** class doesn't exist **")

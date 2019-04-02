@@ -7,6 +7,7 @@ import models
 from datetime import datetime
 from models.base_model import BaseModel
 from models.engine.file_storage import FileStorage
+from sqlalchemy import Column
 
 
 class TestBaseModel(unittest.TestCase):
@@ -54,9 +55,10 @@ class TestBaseModel(unittest.TestCase):
         """Check for docstrings."""
         self.assertIsNotNone(BaseModel.__doc__)
         self.assertIsNotNone(BaseModel.__init__.__doc__)
-        self.assertIsNotNone(BaseModel.__str__.__doc__)
         self.assertIsNotNone(BaseModel.save.__doc__)
         self.assertIsNotNone(BaseModel.to_dict.__doc__)
+        self.assertIsNotNone(BaseModel.delete.__doc__)
+        self.assertIsNotNone(BaseModel.__str__.__doc__)
 
     def test_attributes(self):
         """Check for attributes."""
@@ -69,11 +71,12 @@ class TestBaseModel(unittest.TestCase):
         self.assertTrue(hasattr(BaseModel, "__init__"))
         self.assertTrue(hasattr(BaseModel, "save"))
         self.assertTrue(hasattr(BaseModel, "to_dict"))
+        self.assertTrue(hasattr(BaseModel, "delete"))
+        self.assertTrue(hasattr(BaseModel, "__str__"))
 
     def test_init(self):
         """Test initialization."""
         self.assertTrue(isinstance(self.base, BaseModel))
-        self.assertIn(self.base, models.storage.all().values())
 
     def test_two_models_are_unique(self):
         """Test that different BaseModel instances are unique."""
@@ -115,6 +118,12 @@ class TestBaseModel(unittest.TestCase):
                          base_dict["created_at"])
         self.assertEqual(self.base.updated_at.isoformat(),
                          base_dict["updated_at"])
+        self.assertEqual(base_dict.get("_sa_instance_state", None), None)
+
+    def test_delete(self):
+        """Test delete method."""
+        self.base.delete()
+        self.assertNotIn(self.base, models.storage.all().values())
 
 
 if __name__ == "__main__":

@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 """Defines the Place class."""
+import models
 from models.base_model import Base
 from models.base_model import BaseModel
 from models.amenity import Amenity
@@ -55,7 +56,7 @@ class Place(BaseModel, Base):
     longitude = Column(Float)
     reviews = relationship("Review", backref="place")
     amenities = relationship("Amenity", secondary=association_table,
-                             viewonly=False)
+                             viewonly=False, backref="place_amenities")
     amenity_ids = []
 
     @property
@@ -69,9 +70,14 @@ class Place(BaseModel, Base):
 
     @property
     def amenities(self):
-        """Return a list of all Amenities with place_id in amenity_ids."""
+        """Get/set linked Amenities."""
         amenity_list = []
         for amenity in list(models.storage.all(Amenity).values()):
-            if amenity.place_id in self.amenity_ids:
+            if amenity.id in self.amenity_ids:
                 amenity_list.append(amenity)
         return amenity_list
+
+    @amenities.setter
+    def amenities(self, value):
+        if type(value) == Amenity:
+            self.amenity_ids.append(value)

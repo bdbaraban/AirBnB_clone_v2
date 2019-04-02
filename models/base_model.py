@@ -4,12 +4,19 @@ import models
 from uuid import uuid4
 from datetime import datetime
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, String, DateTime
+from sqlalchemy import Column, DateTime, String
+
 Base = declarative_base()
 
 
 class BaseModel:
-    """Defines the BaseModel class."""
+    """Defines the BaseModel class.
+
+    Attributes:
+        id (sqlalchemy.String): The BaseModel id.
+        created_at (sqlalchemy.DateTime): The datetime at creation.
+        updated_at (sqlalchemy.DateTime): The datetime of last update.
+    """
 
     id = Column(String(60), primary_key=True, nullable=False)
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow())
@@ -51,6 +58,7 @@ class BaseModel:
         return my_dict
 
     def delete(self):
+        """Delete the current instance from storage."""
         models.storage.delete(self)
 
     def __str__(self):

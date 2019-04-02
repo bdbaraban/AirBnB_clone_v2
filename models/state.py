@@ -1,5 +1,6 @@
 #!/usr/bin/python3
-"""This is the state class"""
+"""Defines the State class."""
+import models
 from models.base_model import Base, BaseModel
 from models.city import City
 from sqlalchemy import Column, String
@@ -7,9 +8,14 @@ from sqlalchemy.orm import relationship
 
 
 class State(BaseModel, Base):
-    """This is the class for State
+    """Represents a state for a MySQL database.
+
+    Inherits from SQLAlchemy Base and links to the MySQL table states.
+
     Attributes:
-        name: input name
+        __tablename__ (str): The name of the MySQL table to store States.
+        name (sqlalchemy.String): The name of the State.
+        cities(sqlalchemy.orm.relationship): The State-City relationship.
     """
     __tablename__ = "states"
     name = Column(String(128), nullable=False)
@@ -18,7 +24,7 @@ class State(BaseModel, Base):
     @property
     def cities(self):
         city_list = []
-        for city in list(models.storage.all(City).vallues()):
+        for city in list(models.storage.all(City).values()):
             if city.state_id == self.id:
                 city_list.append(city)
         return city_list

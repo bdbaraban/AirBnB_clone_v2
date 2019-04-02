@@ -77,7 +77,6 @@ class TestUser(unittest.TestCase):
     def test_init(self):
         """Test initialization."""
         self.assertTrue(isinstance(self.user, User))
-        self.assertIn(self.user, models.storage.all().values())
 
     def test_two_models_are_unique(self):
         """Test that different User instances are unique."""

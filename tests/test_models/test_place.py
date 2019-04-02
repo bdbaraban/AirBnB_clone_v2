@@ -91,7 +91,6 @@ class TestPlace(unittest.TestCase):
     def test_init(self):
         """Test initialization."""
         self.assertTrue(isinstance(self.place, Place))
-        self.assertIn(self.place, models.storage.all().values())
 
     def test_two_models_are_unique(self):
         """Test that different Place instances are unique."""

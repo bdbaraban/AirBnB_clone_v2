@@ -33,12 +33,20 @@ class TestFileStorage(unittest.TestCase):
             pass
         FileStorage._FileStorage__objects = {}
         cls.base = BaseModel()
+        models.storage.new(cls.base)
         cls.user = User()
+        models.storage.new(cls.user)
         cls.state = State()
+        models.storage.new(cls.state)
         cls.place = Place()
+        models.storage.new(cls.place)
         cls.city = City()
+        models.storage.new(cls.city)
         cls.amenity = Amenity()
+        models.storage.new(cls.amenity)
         cls.review = Review()
+        models.storage.new(cls.review)
+        models.storage.save()
 
     @classmethod
     def tearDownClass(cls):

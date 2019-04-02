@@ -75,7 +75,6 @@ class TestReview(unittest.TestCase):
     def test_init(self):
         """Test initialization."""
         self.assertTrue(isinstance(self.review, Review))
-        self.assertIn(self.review, models.storage.all().values())
 
     def test_two_models_are_unique(self):
         """Test that different Review instances are unique."""

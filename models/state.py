@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 """This is the state class"""
 from models.base_model import BaseModel
+from sqlalchemy import String, Column
 
 
 class State(BaseModel):
@@ -8,4 +9,10 @@ class State(BaseModel):
     Attributes:
         name: input name
     """
-    name = ""
+    __tablename__ = "states"
+    name = Column(String(128), nullable=False)
+    cities = relationship("City",  backref = "state", cascade = "delete")
+
+    @property
+    def cities(self):
+        for 

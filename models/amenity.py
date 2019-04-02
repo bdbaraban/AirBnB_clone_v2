@@ -1,11 +1,19 @@
 #!/usr/bin/python3
-"""This is the amenity class"""
+"""Defines the Amenity class."""
+from models.base_model import Base
 from models.base_model import BaseModel
+from sqlalchemy import Column
+from sqlalchemy import String
 
 
-class Amenity(BaseModel):
-    """This is the class for Amenity
+class Amenity(BaseModel, Base):
+    """Represents an Amenity for a MySQL database.
+
+    Inherits from SQLAlchemy Base and links to the MySQL table amenities.
+
     Attributes:
-        name: input name
+        __tablename__ (str): The name of the MySQL table to store Amenities.
+        name (sqlalchemy String): The amenity name.
     """
-    name = ""
+    __tablename__ = "amenities"
+    name = Column(String(128), nullable=False)

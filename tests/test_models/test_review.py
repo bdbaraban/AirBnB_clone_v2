@@ -85,7 +85,7 @@ class TestReview(unittest.TestCase):
 
     def test_init_args_kwargs(self):
         """Test initialization with args and kwargs."""
-        dt = datetime.today()
+        dt = datetime.utcnow()
         rv = Review("1", id="5", created_at=dt.isoformat())
         self.assertEqual(rv.id, "5")
         self.assertEqual(rv.created_at, dt)
@@ -103,6 +103,7 @@ class TestReview(unittest.TestCase):
         self.assertIn("'user_id': '{}'".format(self.review.user_id), s)
         self.assertIn("'text': '{}'".format(self.review.text), s)
 
+    @unittest.skipIf(os.getenv("HBNB_ENV") != "test", "MySQL env vars exist")
     def test_save(self):
         """Test save method."""
         old = self.review.updated_at

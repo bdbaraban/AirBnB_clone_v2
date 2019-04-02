@@ -87,7 +87,7 @@ class TestBaseModel(unittest.TestCase):
 
     def test_init_args_kwargs(self):
         """Test initialization with args and kwargs."""
-        dt = datetime.today()
+        dt = datetime.utcno()
         bm = BaseModel("1", id="5", created_at=dt.isoformat())
         self.assertEqual(bm.id, "5")
         self.assertEqual(bm.created_at, dt)
@@ -100,6 +100,7 @@ class TestBaseModel(unittest.TestCase):
         self.assertIn("'created_at': {}".format(repr(self.base.created_at)), s)
         self.assertIn("'updated_at': {}".format(repr(self.base.updated_at)), s)
 
+    @unittest.skipIf(os.getenv("HBNB_ENV") != "test", "MySQL env vars exist")
     def test_save(self):
         """Test save method."""
         old = self.base.updated_at
@@ -108,6 +109,7 @@ class TestBaseModel(unittest.TestCase):
         with open("file.json", "r") as f:
             self.assertIn("BaseModel." + self.base.id, f.read())
 
+    @unittest.skipIf(os.getenv("HBNB_ENV") != "test", "MySQL env vars exist")
     def test_to_dict(self):
         """Test to_dict method."""
         base_dict = self.base.to_dict()
@@ -120,6 +122,7 @@ class TestBaseModel(unittest.TestCase):
                          base_dict["updated_at"])
         self.assertEqual(base_dict.get("_sa_instance_state", None), None)
 
+    @unittest.skipIf(os.getenv("HBNB_ENV") != "test", "MySQL env vars exist")
     def test_delete(self):
         """Test delete method."""
         self.base.delete()

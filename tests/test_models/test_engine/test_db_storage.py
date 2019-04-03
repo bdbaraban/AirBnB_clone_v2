@@ -64,9 +64,7 @@ class TestDBStorage(unittest.TestCase):
         cls.storage._DBStorage__session.delete(cls.state)
         cls.storage._DBStorage__session.delete(cls.city)
         cls.storage._DBStorage__session.delete(cls.user)
-        cls.storage._DBStorage__session.delete(cls.place)
         cls.storage._DBStorage__session.delete(cls.amenity)
-        cls.storage._DBStorage__session.delete(cls.review)
         cls.storage._DBStorage__session.commit()
         del cls.state
         del cls.city

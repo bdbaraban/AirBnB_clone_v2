@@ -15,9 +15,9 @@ class BaseModel:
     """Defines the BaseModel class.
 
     Attributes:
-        id (sqlalchemy.String): The BaseModel id.
-        created_at (sqlalchemy.DateTime): The datetime at creation.
-        updated_at (sqlalchemy.DateTime): The datetime of last update.
+        id (sqlalchemy String): The BaseModel id.
+        created_at (sqlalchemy DateTime): The datetime at creation.
+        updated_at (sqlalchemy DateTime): The datetime of last update.
     """
 
     id = Column(String(60), primary_key=True, nullable=False)

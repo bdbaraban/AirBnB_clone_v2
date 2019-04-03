@@ -24,7 +24,7 @@ class State(BaseModel, Base):
     name = Column(String(128), nullable=False)
     cities = relationship("City",  backref="state")
 
-    if getenv("HBNB_TYPE_STORAGE", None) != "db":
+    if getenv("HBNB_TYPE_STORAGE", None) is None:
         @property
         def cities(self):
             """Get a list of all related City objects."""

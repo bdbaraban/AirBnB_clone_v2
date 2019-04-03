@@ -15,9 +15,9 @@ class BaseModel:
     """Defines the BaseModel class.
 
     Attributes:
-        id (sqlalchemy.String): The BaseModel id.
-        created_at (sqlalchemy.DateTime): The datetime at creation.
-        updated_at (sqlalchemy.DateTime): The datetime of last update.
+        id (sqlalchemy String): The BaseModel id.
+        created_at (sqlalchemy DateTime): The datetime at creation.
+        updated_at (sqlalchemy DateTime): The datetime of last update.
     """
 
     id = Column(String(60), primary_key=True, nullable=False)
@@ -65,5 +65,6 @@ class BaseModel:
 
     def __str__(self):
         """Return the print/str representation of the BaseModel instance."""
-        return "[{}] ({}) {}".format(
-            type(self).__name__, self.id, self.to_dict())
+        d = self.to_dict().copy()
+        del d["__class__"]
+        return "[{}] ({}) {}".format(type(self).__name__, self.id, d)

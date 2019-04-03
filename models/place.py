@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 """Defines the Place class."""
 import models
+from os import getenv
 from models.base_model import Base
 from models.base_model import BaseModel
 from models.amenity import Amenity
@@ -56,29 +57,30 @@ class Place(BaseModel, Base):
     latitude = Column(Float)
     longitude = Column(Float)
     reviews = relationship("Review", backref="place")
-    amenities = relationship("Amenity", secondary=association_table,
-                             viewonly=False, backref="place_amenities")
+    amenities = relationship("Amenity", secondary="place_amenity",
+                             viewonly=False, back_populates="place_amenities")
     amenity_ids = []
 
     @property
-    def review(self):
-        """Return a list of all Reviews with Review.place_id == Place.id."""
+    def reviews(self):
+        """Get a list of all linked Reviews."""
         review_list = []
         for review in list(models.storage.all(Review).values()):
             if review.place_id == self.id:
                 review_list.append(review)
         return review_list
 
-    @property
-    def amenities(self):
-        """Get/set linked Amenities."""
-        amenity_list = []
-        for amenity in list(models.storage.all(Amenity).values()):
-            if amenity.id in self.amenity_ids:
-                amenity_list.append(amenity)
-        return amenity_list
+    if getenv("HBNB_TYPE_STORAGE", None) != "db":
+        @property
+        def amenities(self):
+            """Get/set linked Amenities."""
+            amenity_list = []
+            for amenity in list(models.storage.all(Amenity).values()):
+                if amenity.id in self.amenity_ids:
+                    amenity_list.append(amenity)
+            return amenity_list
 
-    @amenities.setter
-    def amenities(self, value):
-        if type(value) == Amenity:
-            self.amenity_ids.append(value)
+        @amenities.setter
+        def amenities(self, value):
+            if type(value) == Amenity:
+                self.amenity_ids.append(value)

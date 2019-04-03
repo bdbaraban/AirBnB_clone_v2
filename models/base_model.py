@@ -32,7 +32,7 @@ class BaseModel:
             **kwargs (dict): Key/value pairs of attributes.
         """
         self.id = str(uuid4())
-        self.created_at = self.updated_at = datetime.today()
+        self.created_at = self.updated_at = datetime.utcnow()
         if kwargs:
             for key, value in kwargs.items():
                 if key == "created_at" or key == "updated_at":
@@ -42,7 +42,7 @@ class BaseModel:
 
     def save(self):
         """Update updated_at with the current datetime."""
-        self.updated_at = datetime.today()
+        self.updated_at = datetime.utcnow()
         models.storage.new(self)
         models.storage.save()
 
@@ -65,6 +65,6 @@ class BaseModel:
 
     def __str__(self):
         """Return the print/str representation of the BaseModel instance."""
-        d = self.__dict__
+        d = self.__dict__.copy()
         d.pop("_sa_instance_state", None)
         return "[{}] ({}) {}".format(type(self).__name__, self.id, d)

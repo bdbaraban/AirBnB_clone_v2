@@ -1,12 +1,10 @@
 #!/usr/bin/python3
 """Defines unnittests for models/engine/db_storage.py."""
-import os
-import json
 import pep8
-import models
+import MySQLdb
 import unittest
-from datetime import datetime
-from models.base_model import BaseModel
+from os import getenv
+from models.base_model import Base
 from models.user import User
 from models.state import State
 from models.city import City
@@ -14,8 +12,10 @@ from models.amenity import Amenity
 from models.place import Place
 from models.review import Review
 from models.engine.db_storage import DBStorage
-from sqlalchemy.engine.base import Engine
+from sqlalchemy.orm import scoped_session
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.session import Session
+from sqlalchemy.engine.base import Engine
 
 
 class TestDBStorage(unittest.TestCase):
@@ -23,23 +23,59 @@ class TestDBStorage(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        """Create instances of all class types for testing."""
+        """DBStorage testing setup.
+
+        Instantiate new DBStorage.
+        Fill DBStorage test session with instances of all classes.
+        """
+        if getenv("HBNB_ENV") is None:
+            return
+        cls.storage = DBStorage()
+        Base.metadata.create_all(cls.storage._DBStorage__engine)
+        session_factory = sessionmaker(bind=cls.storage._DBStorage__engine,
+                                       expire_on_commit=False)
+        Session = scoped_session(session_factory)
+        cls.storage._DBStorage__session = Session()
         cls.state = State(name="California")
-        models.storage.new(cls.state)
+        cls.storage._DBStorage__session.add(cls.state)
         cls.city = City(name="San_Jose", state_id=cls.state.id)
-        models.storage.new(cls.city)
-        models.storage.save()
+        cls.storage._DBStorage__session.add(cls.city)
+        cls.user = User(email="poppy@holberton.com", password="betty")
+        cls.storage._DBStorage__session.add(cls.user)
+        cls.place = Place(city_id=cls.city.id, user_id=cls.user.id,
+                          name="School")
+        cls.storage._DBStorage__session.add(cls.place)
+        cls.amenity = Amenity(name="Wifi")
+        cls.storage._DBStorage__session.add(cls.amenity)
+        cls.review = Review(place_id=cls.place.id, user_id=cls.user.id,
+                            text="stellar")
+        cls.storage._DBStorage__session.add(cls.review)
+        cls.storage._DBStorage__session.commit()
 
     @classmethod
     def tearDownClass(cls):
-        """Delete all test class instances."""
+        """DBStorage testing teardown.
+
+        Delete all instantiated test classes.
+        Clear DBStorage session.
+        """
+        if getenv("HBNB_ENV") is None:
+            return
+        cls.storage._DBStorage__session.delete(cls.state)
+        cls.storage._DBStorage__session.delete(cls.city)
+        cls.storage._DBStorage__session.delete(cls.user)
+        cls.storage._DBStorage__session.delete(cls.place)
+        cls.storage._DBStorage__session.delete(cls.amenity)
+        cls.storage._DBStorage__session.delete(cls.review)
+        cls.storage._DBStorage__session.commit()
         del cls.state
         del cls.city
-
-    def new(self):
-        """Call storage.new on all created class instances."""
-        models.storage.new(self.state)
-        models.storage.new(self.city)
+        del cls.user
+        del cls.place
+        del cls.amenity
+        del cls.review
+        cls.storage._DBStorage__session.close()
+        del cls.storage
 
     def test_pep8(self):
         """Test pep8 styling."""
@@ -57,12 +93,11 @@ class TestDBStorage(unittest.TestCase):
         self.assertIsNotNone(DBStorage.delete.__doc__)
         self.assertIsNotNone(DBStorage.reload.__doc__)
 
-    @unittest.skipIf(os.getenv("HBNB_ENV") != "test",
-                     "Requires MySQL environmental variables")
+    @unittest.skipIf(getenv("HBNB_ENV") is None, "MySQL env vars required")
     def test_attributes(self):
         """Check for attributes."""
-        self.assertEqual(Engine, type(models.storage._DBStorage__engine))
-        self.assertEqual(Session, type(models.storage._DBStorage__session))
+        self.assertTrue(isinstance(self.storage._DBStorage__engine, Engine))
+        self.assertTrue(isinstance(self.storage._DBStorage__session, Session))
 
     def test_methods(self):
         """Check for methods."""
@@ -73,76 +108,76 @@ class TestDBStorage(unittest.TestCase):
         self.assertTrue(hasattr(DBStorage, "delete"))
         self.assertTrue(hasattr(DBStorage, "reload"))
 
-    @unittest.skipIf(os.getenv("HBNB_ENV") != "test",
-                     "Requires MySQL environmental variables")
+    @unittest.skipIf(getenv("HBNB_ENV") is None, "MySQL env vars required")
     def test_init(self):
         """Test initialization."""
-        self.assertTrue(isinstance(models.storage, DBStorage))
+        self.assertTrue(isinstance(self.storage, DBStorage))
 
-    @unittest.skipIf(os.getenv("HBNB_ENV") != "test",
-                     "Requires MySQL environmental variables")
+    @unittest.skipIf(getenv("HBNB_ENV") is None, "MySQL env vars required")
     def test_all(self):
         """Test default all method."""
-        obj = models.storage.all()
+        obj = self.storage.all()
         self.assertEqual(type(obj), dict)
-        self.assertEqual(len(obj), 7)
+        self.assertEqual(len(obj), 6)
 
-    @unittest.skipIf(os.getenv("HBNB_ENV") != "test",
-                     "Requires MySQL environmental variables")
+    @unittest.skipIf(getenv("HBNB_ENV") is None, "MySQL env vars required")
     def test_all_cls(self):
         """Test all method with specified cls."""
-        obj = models.storage.all(BaseModel)
+        obj = self.storage.all(State)
         self.assertEqual(type(obj), dict)
         self.assertEqual(len(obj), 1)
-        self.assertEqual(self.base, list(obj.values())[0])
+        self.assertEqual(self.state, list(obj.values())[0])
 
-    @unittest.skipIf(os.getenv("HBNB_ENV") != "test",
-                     "Requires MySQL environmental variables")
+    @unittest.skipIf(getenv("HBNB_ENV") is None, "MySQL env vars required")
     def test_new(self):
         """Test new method."""
-        self.new()
-        store = list(DBStorage._DBStorage__session.new)
-        self.assertIn(self.state, store)
-        self.assertIn(self.city, store)
+        st = State(name="Washington")
+        self.storage.new(st)
+        store = list(self.storage._DBStorage__session.new)
+        self.assertIn(st, store)
 
-    @unittest.skipIf(os.getenv("HBNB_ENV") != "test",
-                     "Requires MySQL environmental variables")
+    @unittest.skipIf(getenv("HBNB_ENV") is None, "MySQL env vars required")
     def test_save(self):
         """Test save method."""
-        self.new()
-        models.storage.save()
-        store = models.storage.all()
-        self.assertIn(self.state, store)
-        self.assertIn(self.city, store)
+        st = State(name="Virginia")
+        self.storage._DBStorage__session.add(st)
+        self.storage.save()
+        db = MySQLdb.connect(user="hbnb_test",
+                             passwd="hbnb_test_pwd",
+                             db="hbnb_test_db")
+        cursor = db.cursor()
+        cursor.execute("SELECT * FROM states WHERE BINARY name = 'Virginia'")
+        query = cursor.fetchall()
+        self.assertEqual(1, len(query))
+        self.assertEqual(st.id, query[0][0])
+        cursor.close()
 
-    @unittest.skipIf(os.getenv("HBNB_ENV") != "test",
-                     "Requires MySQL environmental variables")
+    @unittest.skipIf(getenv("HBNB_ENV") is None, "MySQL env vars required")
     def test_delete(self):
         """Test delete method."""
-        st = State()
-        models.storage.new(st)
-        models.storage.save(st)
-        models.storage.delete(st)
-        models.storage.save(st)
-        self.assertNotIn(st, models.storage.all(State))
+        st = State(name="New_York")
+        self.storage._DBStorage__session.add(st)
+        self.storage._DBStorage__session.commit()
+        self.storage.delete(st)
+        self.assertIn(st, list(self.storage._DBStorage__session.deleted))
 
-    @unittest.skipIf(os.getenv("HBNB_ENV") != "test",
-                     "Requires MySQL environmental variables")
+    @unittest.skipIf(getenv("HBNB_ENV") is None, "MySQL env vars required")
     def test_delete_none(self):
         """Test delete method with None."""
         try:
-            models.storage.delete(None)
+            self.storage.delete(None)
         except Exception:
             self.fail
 
-    @unittest.skipIf(os.getenv("HBNB_ENV") != "test",
-                     "Requires MySQL environmental variables")
+    @unittest.skipIf(getenv("HBNB_ENV") is None, "MySQL env vars required")
     def test_reload(self):
         """Test reload method."""
-        og_session = models.storage._DBStorage__session
-        models.storage.reload()
-        self.assertEqual(Session, type(models.storage._DBStorage__session))
-        self.assertNotEqual(og_session, models.storage._DBStorage__session)
+        og_session = self.storage._DBStorage__session
+        self.storage.reload()
+        self.assertIsInstance(self.storage._DBStorage__session, Session)
+        self.assertNotEqual(og_session, self.storage._DBStorage__session)
+        self.storage._DBStorage__session.close()
+        self.storage._DBStorage__session = og_session
 
 
 if __name__ == "__main__":

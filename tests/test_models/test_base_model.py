@@ -3,11 +3,9 @@
 import os
 import pep8
 import unittest
-import models
 from datetime import datetime
 from models.base_model import BaseModel
 from models.engine.file_storage import FileStorage
-from sqlalchemy import Column
 
 
 class TestBaseModel(unittest.TestCase):
@@ -26,6 +24,7 @@ class TestBaseModel(unittest.TestCase):
         except IOError:
             pass
         FileStorage._FileStorage__objects = {}
+        cls.storage = FileStorage()
         cls.base = BaseModel()
 
     @classmethod
@@ -43,6 +42,7 @@ class TestBaseModel(unittest.TestCase):
             os.rename("tmp", "file.json")
         except IOError:
             pass
+        del cls.storage
         del cls.base
 
     def test_pep8(self):
@@ -76,7 +76,7 @@ class TestBaseModel(unittest.TestCase):
 
     def test_init(self):
         """Test initialization."""
-        self.assertTrue(isinstance(self.base, BaseModel))
+        self.assertIsInstance(self.base, BaseModel)
 
     def test_two_models_are_unique(self):
         """Test that different BaseModel instances are unique."""
@@ -87,7 +87,7 @@ class TestBaseModel(unittest.TestCase):
 
     def test_init_args_kwargs(self):
         """Test initialization with args and kwargs."""
-        dt = datetime.utcno()
+        dt = datetime.utcnow()
         bm = BaseModel("1", id="5", created_at=dt.isoformat())
         self.assertEqual(bm.id, "5")
         self.assertEqual(bm.created_at, dt)
@@ -100,16 +100,15 @@ class TestBaseModel(unittest.TestCase):
         self.assertIn("'created_at': {}".format(repr(self.base.created_at)), s)
         self.assertIn("'updated_at': {}".format(repr(self.base.updated_at)), s)
 
-    @unittest.skipIf(os.getenv("HBNB_ENV") != "test", "MySQL env vars exist")
+    @unittest.skipIf(os.getenv("HBNB_ENV") is not None, "Testing DBStorage")
     def test_save(self):
         """Test save method."""
         old = self.base.updated_at
         self.base.save()
         self.assertLess(old, self.base.updated_at)
         with open("file.json", "r") as f:
-            self.assertIn("BaseModel." + self.base.id, f.read())
+            self.assertIn("BaseModel.{}".format(self.base.id), f.read())
 
-    @unittest.skipIf(os.getenv("HBNB_ENV") != "test", "MySQL env vars exist")
     def test_to_dict(self):
         """Test to_dict method."""
         base_dict = self.base.to_dict()
@@ -122,11 +121,11 @@ class TestBaseModel(unittest.TestCase):
                          base_dict["updated_at"])
         self.assertEqual(base_dict.get("_sa_instance_state", None), None)
 
-    @unittest.skipIf(os.getenv("HBNB_ENV") != "test", "MySQL env vars exist")
+    @unittest.skipIf(os.getenv("HBNB_ENV") is not None, "Testing DBStorage")
     def test_delete(self):
         """Test delete method."""
         self.base.delete()
-        self.assertNotIn(self.base, models.storage.all().values())
+        self.assertNotIn(self.base, FileStorage._FileStorage__objects)
 
 
 if __name__ == "__main__":

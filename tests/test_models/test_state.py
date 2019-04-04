@@ -89,6 +89,7 @@ class TestState(unittest.TestCase):
         with self.assertRaises(OperationalError):
             self.dbstorage._DBStorage__session.add(State())
             self.dbstorage._DBStorage__session.commit()
+        self.dbstorage._DBStorage__session.rollback()
 
     def test_is_subclass(self):
         """Check that State is a subclass of BaseModel."""

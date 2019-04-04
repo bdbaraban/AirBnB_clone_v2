@@ -52,7 +52,7 @@ class BaseModel:
         Includes the key/value pair __class__ representing
         the class name of the object.
         """
-        my_dict = dict(self.__dict__)
+        my_dict = self.__dict__.copy()
         my_dict["__class__"] = str(type(self).__name__)
         my_dict["created_at"] = self.created_at.isoformat()
         my_dict["updated_at"] = self.updated_at.isoformat()
@@ -65,6 +65,6 @@ class BaseModel:
 
     def __str__(self):
         """Return the print/str representation of the BaseModel instance."""
-        d = self.to_dict().copy()
-        del d["__class__"]
+        d = self.__dict__.copy()
+        d.pop("_sa_instance_state", None)
         return "[{}] ({}) {}".format(type(self).__name__, self.id, d)

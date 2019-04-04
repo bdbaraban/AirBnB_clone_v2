@@ -2,12 +2,21 @@
 """Defines unnittests for models/review.py."""
 import os
 import pep8
+import MySQLdb
 import unittest
-import models
 from datetime import datetime
+from models.base_model import Base
 from models.base_model import BaseModel
+from models.state import State
+from models.city import City
+from models.user import User
+from models.place import Place
 from models.review import Review
+from models.engine.db_storage import DBStorage
 from models.engine.file_storage import FileStorage
+from sqlalchemy.exc import OperationalError
+from sqlalchemy.orm import scoped_session
+from sqlalchemy.orm import sessionmaker
 
 
 class TestReview(unittest.TestCase):
@@ -16,27 +25,38 @@ class TestReview(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Review testing setup.
-
-        Temporarily renrves any existing file.json.
+        Temporarily renames any existing file.json.
         Resets FileStorage objects dictionary.
-        Creates a Review instance for testing.
+        Creates FileStorage, DBStorage and Review instances for testing.
         """
         try:
             os.rename("file.json", "tmp")
         except IOError:
             pass
         FileStorage._FileStorage__objects = {}
-        cls.review = Review()
-        cls.review.place_id = "415"
-        cls.review.user_id = "7"
-        cls.review.text = "San Frantastic"
+        cls.filestorage = FileStorage()
+        cls.state = State(name="California")
+        cls.city = City(name="San Francisco", state_id=cls.state.id)
+        cls.user = User(email="poppy@holberton.com", password="betty98")
+        cls.place = Place(city_id=cls.city.id, user_id=cls.user.id,
+                          name="Betty")
+        cls.review = Review(text="stellar", place_id=cls.place.id,
+                            user_id=cls.user.id)
+
+        if os.getenv("HBNB_ENV") is None:
+            return
+        cls.dbstorage = DBStorage()
+        Base.metadata.create_all(cls.dbstorage._DBStorage__engine)
+        session_factory = sessionmaker(bind=cls.dbstorage._DBStorage__engine,
+                                       expire_on_commit=False)
+        Session = scoped_session(session_factory)
+        cls.dbstorage._DBStorage__session = Session()
 
     @classmethod
     def tearDownClass(cls):
         """Review testing teardown.
-
         Restore original file.json.
-        Delete the test Review instance.
+        Delete the FileStorage, DBStorage and Review test instances.
         """
         try:
             os.remove("file.json")
@@ -46,7 +66,15 @@ class TestReview(unittest.TestCase):
             os.rename("tmp", "file.json")
         except IOError:
             pass
+        if os.getenv("HBNB_ENV") is not None:
+            cls.dbstorage._DBStorage__session.close()
+            del cls.dbstorage
+        del cls.state
+        del cls.city
+        del cls.user
+        del cls.place
         del cls.review
+        del cls.filestorage
 
     def test_pep8(self):
         """Test pep8 styling."""
@@ -60,13 +88,32 @@ class TestReview(unittest.TestCase):
 
     def test_attributes(self):
         """Check for attributes."""
-        rv = Review()
-        self.assertEqual(str, type(rv.id))
-        self.assertEqual(datetime, type(rv.created_at))
-        self.assertEqual(datetime, type(rv.updated_at))
-        self.assertEqual(str, type(rv.place_id))
-        self.assertEqual(str, type(rv.user_id))
-        self.assertEqual(str, type(rv.text))
+        us = Review(email="a", password="a")
+        self.assertEqual(str, type(us.id))
+        self.assertEqual(datetime, type(us.created_at))
+        self.assertEqual(datetime, type(us.updated_at))
+        self.assertTrue(hasattr(us, "__tablename__"))
+        self.assertTrue(hasattr(us, "text"))
+        self.assertTrue(hasattr(us, "place_id"))
+        self.assertTrue(hasattr(us, "user_id"))
+
+    @unittest.skipIf(os.getenv("HBNB_ENV") is None, "MySQL env vars required")
+    def test_nullable_attributes(self):
+        """Test that email attribute is non-nullable."""
+        with self.assertRaises(OperationalError):
+            self.dbstorage._DBStorage__session.add(Review(
+                place_id=self.place.id, user_id=self.user.id))
+            self.dbstorage._DBStorage__session.commit()
+        self.dbstorage._DBStorage__session.rollback()
+        with self.assertRaises(OperationalError):
+            self.dbstorage._DBStorage__session.add(Review(
+                text="a", user_id=self.user.id))
+            self.dbstorage._DBStorage__session.commit()
+        self.dbstorage._DBStorage__session.rollback()
+        with self.assertRaises(OperationalError):
+            self.dbstorage._DBStorage__session.add(Review(
+                text="a", place_id=self.place.id))
+            self.dbstorage._DBStorage__session.commit()
 
     def test_is_subclass(self):
         """Check that Review is a subclass of BaseModel."""
@@ -74,21 +121,21 @@ class TestReview(unittest.TestCase):
 
     def test_init(self):
         """Test initialization."""
-        self.assertTrue(isinstance(self.review, Review))
+        self.assertIsInstance(self.review, Review)
 
     def test_two_models_are_unique(self):
         """Test that different Review instances are unique."""
-        rv = Review()
-        self.assertNotEqual(self.review.id, rv.id)
-        self.assertLess(self.review.created_at, rv.created_at)
-        self.assertLess(self.review.updated_at, rv.updated_at)
+        us = Review(email="a", password="a")
+        self.assertNotEqual(self.review.id, us.id)
+        self.assertLess(self.review.created_at, us.created_at)
+        self.assertLess(self.review.updated_at, us.updated_at)
 
     def test_init_args_kwargs(self):
         """Test initialization with args and kwargs."""
         dt = datetime.utcnow()
-        rv = Review("1", id="5", created_at=dt.isoformat())
-        self.assertEqual(rv.id, "5")
-        self.assertEqual(rv.created_at, dt)
+        st = Review("1", id="5", created_at=dt.isoformat())
+        self.assertEqual(st.id, "5")
+        self.assertEqual(st.created_at, dt)
 
     def test_str(self):
         """Test __str__ representation."""
@@ -99,18 +146,41 @@ class TestReview(unittest.TestCase):
             repr(self.review.created_at)), s)
         self.assertIn("'updated_at': {}".format(
             repr(self.review.updated_at)), s)
+        self.assertIn("'text': '{}'".format(self.review.text), s)
         self.assertIn("'place_id': '{}'".format(self.review.place_id), s)
         self.assertIn("'user_id': '{}'".format(self.review.user_id), s)
-        self.assertIn("'text': '{}'".format(self.review.text), s)
 
-    @unittest.skipIf(os.getenv("HBNB_ENV") != "test", "MySQL env vars exist")
-    def test_save(self):
-        """Test save method."""
+    @unittest.skipIf(os.getenv("HBNB_ENV") is not None, "Testing DBStorage")
+    def test_save_filestorage(self):
+        """Test save method with FileStorage."""
         old = self.review.updated_at
         self.review.save()
         self.assertLess(old, self.review.updated_at)
         with open("file.json", "r") as f:
             self.assertIn("Review." + self.review.id, f.read())
+
+    @unittest.skipIf(os.getenv("HBNB_ENV") is None, "MySQL env vars required")
+    def test_save_dbstorage(self):
+        """Test save method with DBStorage."""
+        old = self.review.updated_at
+        self.state.save()
+        self.city.save()
+        self.user.save()
+        self.place.save()
+        self.review.save()
+        self.assertLess(old, self.review.updated_at)
+        db = MySQLdb.connect(user="hbnb_test",
+                             passwd="hbnb_test_pwd",
+                             db="hbnb_test_db")
+        cursor = db.cursor()
+        cursor.execute("SELECT * \
+                          FROM `reviews` \
+                         WHERE BINARY text = '{}'".
+                       format(self.review.text))
+        query = cursor.fetchall()
+        self.assertEqual(1, len(query))
+        self.assertEqual(self.review.id, query[0][0])
+        cursor.close()
 
     def test_to_dict(self):
         """Test to_dict method."""
@@ -122,9 +192,9 @@ class TestReview(unittest.TestCase):
                          review_dict["created_at"])
         self.assertEqual(self.review.updated_at.isoformat(),
                          review_dict["updated_at"])
+        self.assertEqual(self.review.text, review_dict["text"])
         self.assertEqual(self.review.place_id, review_dict["place_id"])
         self.assertEqual(self.review.user_id, review_dict["user_id"])
-        self.assertEqual(self.review.text, review_dict["text"])
 
 
 if __name__ == "__main__":

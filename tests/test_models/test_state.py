@@ -2,12 +2,16 @@
 """Defines unnittests for models/state.py."""
 import os
 import pep8
+import MySQLdb
 import unittest
-import models
 from datetime import datetime
-from models.base_model import BaseModel
+from models.base_model import Base, BaseModel
 from models.state import State
+from models.engine.db_storage import DBStorage
 from models.engine.file_storage import FileStorage
+from sqlalchemy.exc import OperationalError
+from sqlalchemy.orm import scoped_session
+from sqlalchemy.orm import sessionmaker
 
 
 class TestState(unittest.TestCase):
@@ -19,22 +23,33 @@ class TestState(unittest.TestCase):
 
         Temporarily renames any existing file.json.
         Resets FileStorage objects dictionary.
-        Creates a State instance for testing.
+        Creates FileStorage, DBStorage and State instances for testing.
         """
         try:
             os.rename("file.json", "tmp")
         except IOError:
             pass
         FileStorage._FileStorage__objects = {}
-        cls.state = State()
-        cls.state.name = "California"
+        cls.filestorage = FileStorage()
+        cls.state = State(name="California")
+        key = "{}.{}".format(type(cls.state).__name__, cls.state)
+        cls.filestorage._FileStorage__objects[key] = cls.state
+
+        if os.getenv("HBNB_ENV") is None:
+            return
+        cls.dbstorage = DBStorage()
+        Base.metadata.create_all(cls.dbstorage._DBStorage__engine)
+        session_factory = sessionmaker(bind=cls.dbstorage._DBStorage__engine,
+                                       expire_on_commit=False)
+        Session = scoped_session(session_factory)
+        cls.dbstorage._DBStorage__session = Session()
 
     @classmethod
     def tearDownClass(cls):
         """State testing teardown.
 
         Restore original file.json.
-        Delete the test State instance.
+        Delete the FileStorage, DBStorage and State test instances.
         """
         try:
             os.remove("file.json")
@@ -44,7 +59,11 @@ class TestState(unittest.TestCase):
             os.rename("tmp", "file.json")
         except IOError:
             pass
+        if os.getenv("HBNB_ENV") is not None:
+            cls.dbstorage._DBStorage__session.close()
+            del cls.dbstorage
         del cls.state
+        del cls.filestorage
 
     def test_pep8(self):
         """Test pep8 styling."""
@@ -64,13 +83,21 @@ class TestState(unittest.TestCase):
         self.assertEqual(datetime, type(st.updated_at))
         self.assertTrue(hasattr(st, "name"))
 
+    @unittest.skipIf(os.getenv("HBNB_ENV") is None, "MySQL env vars required")
+    def test_nullable_attributes(self):
+        """Check that relevant DBStorage attributes are non-nullable."""
+        with self.assertRaises(OperationalError):
+            self.dbstorage._DBStorage__session.add(State())
+            self.dbstorage._DBStorage__session.commit()
+        self.dbstorage._DBStorage__session.rollback()
+
     def test_is_subclass(self):
         """Check that State is a subclass of BaseModel."""
         self.assertTrue(issubclass(State, BaseModel))
 
     def test_init(self):
         """Test initialization."""
-        self.assertTrue(isinstance(self.state, State))
+        self.assertIsInstance(self.state, State)
 
     def test_two_models_are_unique(self):
         """Test that different State instances are unique."""
@@ -81,7 +108,7 @@ class TestState(unittest.TestCase):
 
     def test_init_args_kwargs(self):
         """Test initialization with args and kwargs."""
-        dt = datetime.today()
+        dt = datetime.utcnow()
         st = State("1", id="5", created_at=dt.isoformat())
         self.assertEqual(st.id, "5")
         self.assertEqual(st.created_at, dt)
@@ -97,13 +124,33 @@ class TestState(unittest.TestCase):
             repr(self.state.updated_at)), s)
         self.assertIn("'name': '{}'".format(self.state.name), s)
 
-    def test_save(self):
-        """Test save method."""
+    @unittest.skipIf(os.getenv("HBNB_ENV") is not None, "Testing DBStorage")
+    def test_save_filestorage(self):
+        """Test save method with FileStorage."""
         old = self.state.updated_at
         self.state.save()
         self.assertLess(old, self.state.updated_at)
         with open("file.json", "r") as f:
             self.assertIn("State." + self.state.id, f.read())
+
+    @unittest.skipIf(os.getenv("HBNB_ENV") is None, "MySQL env vars required")
+    def test_save_dbstorage(self):
+        """Test save method with DBStorage."""
+        old = self.state.updated_at
+        self.state.save()
+        self.assertLess(old, self.state.updated_at)
+        db = MySQLdb.connect(user="hbnb_test",
+                             passwd="hbnb_test_pwd",
+                             db="hbnb_test_db")
+        cursor = db.cursor()
+        cursor.execute("SELECT * \
+                          FROM `states` \
+                         WHERE BINARY name = '{}'".\
+                       format(self.state.name))
+        query = cursor.fetchall()
+        self.assertEqual(1, len(query))
+        self.assertEqual(self.state.id, query[0][0])
+        cursor.close()
 
     def test_to_dict(self):
         """Test to_dict method."""

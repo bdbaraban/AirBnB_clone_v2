@@ -30,7 +30,7 @@ class TestAmenity(unittest.TestCase):
             pass
         FileStorage._FileStorage__objects = {}
         cls.filestorage = FileStorage()
-        cls.amenity = Amenity(email="poppy@holberton.com", password="betty98")
+        cls.amenity = Amenity(name="The Andrew Lindburg treatment")
 
         if os.getenv("HBNB_ENV") is None:
             return
@@ -123,8 +123,7 @@ class TestAmenity(unittest.TestCase):
             repr(self.amenity.created_at)), s)
         self.assertIn("'updated_at': {}".format(
             repr(self.amenity.updated_at)), s)
-        self.assertIn("'email': '{}'".format(self.amenity.email), s)
-        self.assertIn("'password': '{}'".format(self.amenity.password), s)
+        self.assertIn("'name': '{}'".format(self.amenity.name), s)
 
     @unittest.skipIf(os.getenv("HBNB_ENV") is not None, "Testing DBStorage")
     def test_save_filestorage(self):
@@ -141,14 +140,14 @@ class TestAmenity(unittest.TestCase):
         old = self.amenity.updated_at
         self.amenity.save()
         self.assertLess(old, self.amenity.updated_at)
-        db = MySQLdb.connect(amenity="hbnb_test",
+        db = MySQLdb.connect(user="hbnb_test",
                              passwd="hbnb_test_pwd",
                              db="hbnb_test_db")
         cursor = db.cursor()
         cursor.execute("SELECT * \
-                          FROM `amenitys` \
-                         WHERE BINARY email = '{}'".
-                       format(self.amenity.email))
+                          FROM `amenities` \
+                         WHERE BINARY name = '{}'".
+                       format(self.amenity.name))
         query = cursor.fetchall()
         self.assertEqual(1, len(query))
         self.assertEqual(self.amenity.id, query[0][0])
@@ -164,8 +163,7 @@ class TestAmenity(unittest.TestCase):
                          amenity_dict["created_at"])
         self.assertEqual(self.amenity.updated_at.isoformat(),
                          amenity_dict["updated_at"])
-        self.assertEqual(self.amenity.email, amenity_dict["email"])
-        self.assertEqual(self.amenity.password, amenity_dict["password"])
+        self.assertEqual(self.amenity.name, amenity_dict["name"])
 
 
 if __name__ == "__main__":

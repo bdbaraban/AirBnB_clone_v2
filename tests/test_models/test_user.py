@@ -2,6 +2,7 @@
 """Defines unnittests for models/user.py."""
 import os
 import pep8
+import models
 import MySQLdb
 import unittest
 from datetime import datetime
@@ -32,12 +33,11 @@ class TestUser(unittest.TestCase):
         cls.filestorage = FileStorage()
         cls.user = User(email="poppy@holberton.com", password="betty98")
 
-        if os.getenv("HBNB_ENV") is None:
-            return
-        cls.dbstorage = DBStorage()
-        Base.metadata.create_all(cls.dbstorage._DBStorage__engine)
-        Session = sessionmaker(bind=cls.dbstorage._DBStorage__engine)
-        cls.dbstorage._DBStorage__session = Session()
+        if type(models.storage) == DBStorage:
+            cls.dbstorage = DBStorage()
+            Base.metadata.create_all(cls.dbstorage._DBStorage__engine)
+            Session = sessionmaker(bind=cls.dbstorage._DBStorage__engine)
+            cls.dbstorage._DBStorage__session = Session()
 
     @classmethod
     def tearDownClass(cls):
@@ -54,11 +54,11 @@ class TestUser(unittest.TestCase):
             os.rename("tmp", "file.json")
         except IOError:
             pass
-        if os.getenv("HBNB_ENV") is not None:
-            cls.dbstorage._DBStorage__session.close()
-            del cls.dbstorage
         del cls.user
         del cls.filestorage
+        if type(models.storage) == DBStorage:
+            cls.dbstorage._DBStorage__session.close()
+            del cls.dbstorage
 
     def test_pep8(self):
         """Test pep8 styling."""
@@ -84,7 +84,8 @@ class TestUser(unittest.TestCase):
         self.assertTrue(hasattr(us, "places"))
         self.assertTrue(hasattr(us, "reviews"))
 
-    @unittest.skipIf(os.getenv("HBNB_ENV") is None, "MySQL env vars required")
+    @unittest.skipIf(type(models.storage) == FileStorage,
+                     "Testing FileStorage")
     def test_email_not_nullable(self):
         """Test that email attribute is non-nullable."""
         with self.assertRaises(OperationalError):
@@ -129,7 +130,8 @@ class TestUser(unittest.TestCase):
         self.assertIn("'email': '{}'".format(self.user.email), s)
         self.assertIn("'password': '{}'".format(self.user.password), s)
 
-    @unittest.skipIf(os.getenv("HBNB_ENV") is not None, "Testing DBStorage")
+    @unittest.skipIf(type(models.storage) == DBStorage,
+                     "Testing DBStorage")
     def test_save_filestorage(self):
         """Test save method with FileStorage."""
         old = self.user.updated_at
@@ -138,7 +140,8 @@ class TestUser(unittest.TestCase):
         with open("file.json", "r") as f:
             self.assertIn("User." + self.user.id, f.read())
 
-    @unittest.skipIf(os.getenv("HBNB_ENV") is None, "MySQL env vars required")
+    @unittest.skipIf(type(models.storage) == FileStorage,
+                     "Testing FileStorage")
     def test_save_dbstorage(self):
         """Test save method with DBStorage."""
         old = self.user.updated_at

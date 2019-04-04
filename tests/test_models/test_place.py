@@ -7,8 +7,10 @@ import unittest
 from datetime import datetime
 from models.base_model import Base
 from models.base_model import BaseModel
+from models.amenity import Amenity
 from models.city import City
 from models.place import Place
+from models.review import Review
 from models.state import State
 from models.user import User
 from models.engine.db_storage import DBStorage
@@ -38,6 +40,9 @@ class TestPlace(unittest.TestCase):
         cls.user = User(email="poppy@holberton.com", password="betty98")
         cls.place = Place(city_id=cls.city.id, user_id=cls.user.id,
                           name="Betty")
+        cls.review = Review(text="stellar", place_id=cls.place.id,
+                            user_id=cls.user.id)
+        cls.amenity = Amenity(name="water", place=cls.place.id)
         cls.filestorage = FileStorage()
 
         if os.getenv("HBNB_ENV") is None:
@@ -69,6 +74,8 @@ class TestPlace(unittest.TestCase):
         del cls.city
         del cls.user
         del cls.place
+        del cls.review
+        del cls.amenity
         del cls.filestorage
 
     def test_pep8(self):
@@ -116,6 +123,25 @@ class TestPlace(unittest.TestCase):
                                                          user_id=self.user.id))
             self.dbstorage._DBStorage__session.commit()
         self.dbstorage._DBStorage__session.rollback()
+
+    @unittest.skipIf(os.getenv("HBNB_ENV") is not None, "Testing DBStorage")
+    def test_reviews_filestorage(self):
+        """Test reviews attribute."""
+        key = "{}.{}".format(type(self.review).__name__, self.review.id)
+        self.filestorage._FileStorage__objects[key] = self.review
+        reviews = self.place.reviews
+        self.assertTrue(list, type(reviews))
+        self.assertIn(self.review, reviews)
+
+    @unittest.skipIf(os.getenv("HBNB_ENV") is not None, "Testing DBStorage")
+    def test_amenities(self):
+        """Test amenities attribute."""
+        key = "{}.{}".format(type(self.amenity).__name__, self.amenity.id)
+        self.filestorage._FileStorage__objects[key] = self.amenity
+        self.place.amenities = self.amenity
+        amenities = self.place.amenities
+        self.assertTrue(list, type(amenities))
+        self.assertIn(self.amenity, amenities)
 
     def test_is_subclass(self):
         """Check that Place is a subclass of BaseModel."""

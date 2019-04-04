@@ -6,6 +6,7 @@ import MySQLdb
 import unittest
 from datetime import datetime
 from models.base_model import Base, BaseModel
+from models.city import City
 from models.state import State
 from models.engine.db_storage import DBStorage
 from models.engine.file_storage import FileStorage
@@ -31,6 +32,7 @@ class TestState(unittest.TestCase):
         FileStorage._FileStorage__objects = {}
         cls.filestorage = FileStorage()
         cls.state = State(name="California")
+        cls.city = City(name="San Jose", state_id=cls.state.id)
 
         if os.getenv("HBNB_ENV") is None:
             return
@@ -58,6 +60,7 @@ class TestState(unittest.TestCase):
             cls.dbstorage._DBStorage__session.close()
             del cls.dbstorage
         del cls.state
+        del cls.city
         del cls.filestorage
 
     def test_pep8(self):
@@ -85,6 +88,15 @@ class TestState(unittest.TestCase):
             self.dbstorage._DBStorage__session.add(State())
             self.dbstorage._DBStorage__session.commit()
         self.dbstorage._DBStorage__session.rollback()
+
+    @unittest.skipIf(os.getenv("HBNB_ENV") is not None, "Testing DBStorage")
+    def test_cities(self):
+        """Test reviews attribute."""
+        key = "{}.{}".format(type(self.city).__name__, self.city.id)
+        self.filestorage._FileStorage__objects[key] = self.city
+        cities = self.state.cities
+        self.assertTrue(list, type(cities))
+        self.assertIn(self.city, cities)
 
     def test_is_subclass(self):
         """Check that State is a subclass of BaseModel."""

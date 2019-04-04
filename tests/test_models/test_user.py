@@ -2,12 +2,16 @@
 """Defines unnittests for models/user.py."""
 import os
 import pep8
+import MySQLdb
 import unittest
-import models
 from datetime import datetime
-from models.base_model import BaseModel
+from models.base_model import Base, BaseModel
 from models.user import User
+from models.engine.db_storage import DBStorage
 from models.engine.file_storage import FileStorage
+from sqlalchemy.exc import OperationalError
+from sqlalchemy.orm import scoped_session
+from sqlalchemy.orm import sessionmaker
 
 
 class TestUser(unittest.TestCase):
@@ -19,25 +23,31 @@ class TestUser(unittest.TestCase):
 
         Temporarily renames any existing file.json.
         Resets FileStorage objects dictionary.
-        Creates a User instance for testing.
+        Creates FileStorage, DBStorage and User instances for testing.
         """
         try:
             os.rename("file.json", "tmp")
         except IOError:
             pass
         FileStorage._FileStorage__objects = {}
-        cls.user = User()
-        cls.user.email = "g@gmail.com"
-        cls.user.password = "drowssap"
-        cls.user.first_name = "Gob"
-        cls.user.last_name = "Bog"
+        cls.filestorage = FileStorage()
+        cls.user = User(email="poppy@holberton.com", password="betty98")
+
+        if os.getenv("HBNB_ENV") is None:
+            return
+        cls.dbstorage = DBStorage()
+        Base.metadata.create_all(cls.dbstorage._DBStorage__engine)
+        session_factory = sessionmaker(bind=cls.dbstorage._DBStorage__engine,
+                                       expire_on_commit=False)
+        Session = scoped_session(session_factory)
+        cls.dbstorage._DBStorage__session = Session()
 
     @classmethod
     def tearDownClass(cls):
         """User testing teardown.
 
         Restore original file.json.
-        Delete the test User instance.
+        Delete the FileStorage, DBStorage and User test instances.
         """
         try:
             os.remove("file.json")
@@ -47,7 +57,11 @@ class TestUser(unittest.TestCase):
             os.rename("tmp", "file.json")
         except IOError:
             pass
+        if os.getenv("HBNB_ENV") is not None:
+            cls.dbstorage._DBStorage__session.close()
+            del cls.dbstorage
         del cls.user
+        del cls.filestorage
 
     def test_pep8(self):
         """Test pep8 styling."""
@@ -61,14 +75,28 @@ class TestUser(unittest.TestCase):
 
     def test_attributes(self):
         """Check for attributes."""
-        us = User()
+        us = User(email="a", password="a")
         self.assertEqual(str, type(us.id))
         self.assertEqual(datetime, type(us.created_at))
         self.assertEqual(datetime, type(us.updated_at))
-        self.assertEqual(str, type(us.email))
-        self.assertEqual(str, type(us.password))
-        self.assertEqual(str, type(us.first_name))
-        self.assertEqual(str, type(us.last_name))
+        self.assertTrue(hasattr(us, "__tablename__"))
+        self.assertTrue(hasattr(us, "email"))
+        self.assertTrue(hasattr(us, "password"))
+        self.assertTrue(hasattr(us, "first_name"))
+        self.assertTrue(hasattr(us, "last_name"))
+        self.assertTrue(hasattr(us, "places"))
+        self.assertTrue(hasattr(us, "reviews"))
+
+    @unittest.skipIf(os.getenv("HBNB_ENV") is None, "MySQL env vars required")
+    def test_email_not_nullable(self):
+        """Test that email attribute is non-nullable."""
+        with self.assertRaises(OperationalError):
+            self.dbstorage._DBStorage__session.add(User(password="a"))
+            self.dbstorage._DBStorage__session.commit()
+        self.dbstorage._DBStorage__session.rollback()
+        with self.assertRaises(OperationalError):
+            self.dbstorage._DBStorage__session.add(User(email="a"))
+            self.dbstorage._DBStorage__session.commit()
 
     def test_is_subclass(self):
         """Check that User is a subclass of BaseModel."""
@@ -76,41 +104,61 @@ class TestUser(unittest.TestCase):
 
     def test_init(self):
         """Test initialization."""
-        self.assertTrue(isinstance(self.user, User))
+        self.assertIsInstance(self.user, User)
 
     def test_two_models_are_unique(self):
         """Test that different User instances are unique."""
-        us = User()
+        us = User(email="a", password="a")
         self.assertNotEqual(self.user.id, us.id)
         self.assertLess(self.user.created_at, us.created_at)
         self.assertLess(self.user.updated_at, us.updated_at)
 
     def test_init_args_kwargs(self):
         """Test initialization with args and kwargs."""
-        dt = datetime.today()
-        us = User("1", id="5", created_at=dt.isoformat())
-        self.assertEqual(us.id, "5")
-        self.assertEqual(us.created_at, dt)
+        dt = datetime.utcnow()
+        st = User("1", id="5", created_at=dt.isoformat())
+        self.assertEqual(st.id, "5")
+        self.assertEqual(st.created_at, dt)
 
     def test_str(self):
         """Test __str__ representation."""
         s = self.user.__str__()
         self.assertIn("[User] ({})".format(self.user.id), s)
         self.assertIn("'id': '{}'".format(self.user.id), s)
-        self.assertIn("'created_at': {}".format(repr(self.user.created_at)), s)
-        self.assertIn("'updated_at': {}".format(repr(self.user.updated_at)), s)
+        self.assertIn("'created_at': {}".format(
+            repr(self.user.created_at)), s)
+        self.assertIn("'updated_at': {}".format(
+            repr(self.user.updated_at)), s)
         self.assertIn("'email': '{}'".format(self.user.email), s)
         self.assertIn("'password': '{}'".format(self.user.password), s)
-        self.assertIn("'first_name': '{}'".format(self.user.first_name), s)
-        self.assertIn("'last_name': '{}'".format(self.user.last_name), s)
 
-    def test_save(self):
-        """Test save method."""
+    @unittest.skipIf(os.getenv("HBNB_ENV") is not None, "Testing DBStorage")
+    def test_save_filestorage(self):
+        """Test save method with FileStorage."""
         old = self.user.updated_at
         self.user.save()
         self.assertLess(old, self.user.updated_at)
         with open("file.json", "r") as f:
             self.assertIn("User." + self.user.id, f.read())
+
+    @unittest.skipIf(os.getenv("HBNB_ENV") is None, "MySQL env vars required")
+    def test_save_dbstorage(self):
+        """Test save method with DBStorage."""
+        old = self.user.updated_at
+        self.user.save()
+        self.assertLess(old, self.user.updated_at)
+        db = MySQLdb.connect(user="hbnb_test",
+                             passwd="hbnb_test_pwd",
+                             db="hbnb_test_db")
+        cursor = db.cursor()
+        cursor.execute("SELECT * \
+                          FROM `users` \
+                         WHERE BINARY email = '{}'".
+                       format(self.user.email))
+        query = cursor.fetchall()
+        self.assertEqual(1, len(query))
+        self.assertEqual(self.user.id, query[0][0])
+        cursor.close()
 
     def test_to_dict(self):
         """Test to_dict method."""
@@ -124,8 +172,6 @@ class TestUser(unittest.TestCase):
                          user_dict["updated_at"])
         self.assertEqual(self.user.email, user_dict["email"])
         self.assertEqual(self.user.password, user_dict["password"])
-        self.assertEqual(self.user.first_name, user_dict["first_name"])
-        self.assertEqual(self.user.last_name, user_dict["last_name"])
 
 
 if __name__ == "__main__":

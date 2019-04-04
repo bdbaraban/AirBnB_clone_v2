@@ -5,7 +5,12 @@ import pep8
 import MySQLdb
 import unittest
 from datetime import datetime
-from models.base_model import Base, BaseModel
+from models.base_model import Base
+from models.base_model import BaseModel
+from models.state import State
+from models.city import City
+from models.user import User
+from models.place import Place
 from models.review import Review
 from models.engine.db_storage import DBStorage
 from models.engine.file_storage import FileStorage
@@ -30,7 +35,13 @@ class TestReview(unittest.TestCase):
             pass
         FileStorage._FileStorage__objects = {}
         cls.filestorage = FileStorage()
-        cls.review = Review(email="poppy@holberton.com", password="betty98")
+        cls.state = State(name="California")
+        cls.city = City(name="San Francisco", state_id=cls.state.id)
+        cls.user = User(email="poppy@holberton.com", password="betty98")
+        cls.place = Place(city_id=cls.city.id, user_id=cls.user.id,
+                          name="Betty")
+        cls.review = Review(text="stellar", place_id=cls.place.id,
+                            user_id=cls.user.id)
 
         if os.getenv("HBNB_ENV") is None:
             return
@@ -58,6 +69,10 @@ class TestReview(unittest.TestCase):
         if os.getenv("HBNB_ENV") is not None:
             cls.dbstorage._DBStorage__session.close()
             del cls.dbstorage
+        del cls.state
+        del cls.city
+        del cls.user
+        del cls.place
         del cls.review
         del cls.filestorage
 
@@ -83,14 +98,21 @@ class TestReview(unittest.TestCase):
         self.assertTrue(hasattr(us, "user_id"))
 
     @unittest.skipIf(os.getenv("HBNB_ENV") is None, "MySQL env vars required")
-    def test_email_not_nullable(self):
+    def test_nullable_attributes(self):
         """Test that email attribute is non-nullable."""
         with self.assertRaises(OperationalError):
-            self.dbstorage._DBStorage__session.add(Review(password="a"))
+            self.dbstorage._DBStorage__session.add(Review(
+                place_id=self.place.id, user_id=self.user.id))
             self.dbstorage._DBStorage__session.commit()
         self.dbstorage._DBStorage__session.rollback()
         with self.assertRaises(OperationalError):
-            self.dbstorage._DBStorage__session.add(Review(email="a"))
+            self.dbstorage._DBStorage__session.add(Review(
+                text="a", user_id=self.user.id))
+            self.dbstorage._DBStorage__session.commit()
+        self.dbstorage._DBStorage__session.rollback()
+        with self.assertRaises(OperationalError):
+            self.dbstorage._DBStorage__session.add(Review(
+                text="a", place_id=self.place.id))
             self.dbstorage._DBStorage__session.commit()
 
     def test_is_subclass(self):
@@ -124,8 +146,9 @@ class TestReview(unittest.TestCase):
             repr(self.review.created_at)), s)
         self.assertIn("'updated_at': {}".format(
             repr(self.review.updated_at)), s)
-        self.assertIn("'email': '{}'".format(self.review.email), s)
-        self.assertIn("'password': '{}'".format(self.review.password), s)
+        self.assertIn("'text': '{}'".format(self.review.text), s)
+        self.assertIn("'place_id': '{}'".format(self.review.place_id), s)
+        self.assertIn("'user_id': '{}'".format(self.review.user_id), s)
 
     @unittest.skipIf(os.getenv("HBNB_ENV") is not None, "Testing DBStorage")
     def test_save_filestorage(self):
@@ -140,16 +163,20 @@ class TestReview(unittest.TestCase):
     def test_save_dbstorage(self):
         """Test save method with DBStorage."""
         old = self.review.updated_at
+        self.state.save()
+        self.city.save()
+        self.user.save()
+        self.place.save()
         self.review.save()
         self.assertLess(old, self.review.updated_at)
-        db = MySQLdb.connect(review="hbnb_test",
+        db = MySQLdb.connect(user="hbnb_test",
                              passwd="hbnb_test_pwd",
                              db="hbnb_test_db")
         cursor = db.cursor()
         cursor.execute("SELECT * \
                           FROM `reviews` \
-                         WHERE BINARY email = '{}'".
-                       format(self.review.email))
+                         WHERE BINARY text = '{}'".
+                       format(self.review.text))
         query = cursor.fetchall()
         self.assertEqual(1, len(query))
         self.assertEqual(self.review.id, query[0][0])
@@ -165,8 +192,9 @@ class TestReview(unittest.TestCase):
                          review_dict["created_at"])
         self.assertEqual(self.review.updated_at.isoformat(),
                          review_dict["updated_at"])
-        self.assertEqual(self.review.email, review_dict["email"])
-        self.assertEqual(self.review.password, review_dict["password"])
+        self.assertEqual(self.review.text, review_dict["text"])
+        self.assertEqual(self.review.place_id, review_dict["place_id"])
+        self.assertEqual(self.review.user_id, review_dict["user_id"])
 
 
 if __name__ == "__main__":

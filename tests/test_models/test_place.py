@@ -5,8 +5,12 @@ import pep8
 import MySQLdb
 import unittest
 from datetime import datetime
-from models.base_model import Base, BaseModel
+from models.base_model import Base
+from models.base_model import BaseModel
+from models.city import City
 from models.place import Place
+from models.state import State
+from models.user import User
 from models.engine.db_storage import DBStorage
 from models.engine.file_storage import FileStorage
 from sqlalchemy.exc import OperationalError
@@ -20,6 +24,7 @@ class TestPlace(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Place testing setup.
+
         Temporarily renames any existing file.json.
         Resets FileStorage objects dictionary.
         Creates FileStorage, DBStorage and Place instances for testing.
@@ -29,8 +34,12 @@ class TestPlace(unittest.TestCase):
         except IOError:
             pass
         FileStorage._FileStorage__objects = {}
+        cls.state = State(name="California")
+        cls.city = City(name="San Francisco", state_id=cls.state.id)
+        cls.user = User(email="poppy@holberton.com", password="betty98")
+        cls.place = Place(city_id=cls.city.id, user_id=cls.user.id,
+                          name="Betty")
         cls.filestorage = FileStorage()
-        cls.place = Place(email="poppy@holberton.com", password="betty98")
 
         if os.getenv("HBNB_ENV") is None:
             return
@@ -44,8 +53,9 @@ class TestPlace(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         """Place testing teardown.
+
         Restore original file.json.
-        Delete the FileStorage, DBStorage and Place test instances.
+        Delete test instances.
         """
         try:
             os.remove("file.json")
@@ -58,6 +68,9 @@ class TestPlace(unittest.TestCase):
         if os.getenv("HBNB_ENV") is not None:
             cls.dbstorage._DBStorage__session.close()
             del cls.dbstorage
+        del cls.state
+        del cls.city
+        del cls.user
         del cls.place
         del cls.filestorage
 
@@ -73,7 +86,7 @@ class TestPlace(unittest.TestCase):
 
     def test_attributes(self):
         """Check for attributes."""
-        us = Place(email="a", password="a")
+        us = Place()
         self.assertEqual(str, type(us.id))
         self.assertEqual(datetime, type(us.created_at))
         self.assertEqual(datetime, type(us.updated_at))
@@ -89,15 +102,23 @@ class TestPlace(unittest.TestCase):
         self.assertTrue(hasattr(us, "longitude"))
 
     @unittest.skipIf(os.getenv("HBNB_ENV") is None, "MySQL env vars required")
-    def test_email_not_nullable(self):
+    def test_nullable_attributes(self):
         """Test that email attribute is non-nullable."""
         with self.assertRaises(OperationalError):
-            self.dbstorage._DBStorage__session.add(Place(password="a"))
+            self.dbstorage._DBStorage__session.add(Place(user_id=self.user.id,
+                                                         name="Betty"))
             self.dbstorage._DBStorage__session.commit()
         self.dbstorage._DBStorage__session.rollback()
         with self.assertRaises(OperationalError):
-            self.dbstorage._DBStorage__session.add(Place(email="a"))
+            self.dbstorage._DBStorage__session.add(Place(city_id=self.city.id,
+                                                         name="Betty"))
             self.dbstorage._DBStorage__session.commit()
+        self.dbstorage._DBStorage__session.rollback()
+        with self.assertRaises(OperationalError):
+            self.dbstorage._DBStorage__session.add(Place(city_id=self.city.id,
+                                                         user_id=self.user.id))
+            self.dbstorage._DBStorage__session.commit()
+        self.dbstorage._DBStorage__session.rollback()
 
     def test_is_subclass(self):
         """Check that Place is a subclass of BaseModel."""
@@ -109,7 +130,7 @@ class TestPlace(unittest.TestCase):
 
     def test_two_models_are_unique(self):
         """Test that different Place instances are unique."""
-        us = Place(email="a", password="a")
+        us = Place()
         self.assertNotEqual(self.place.id, us.id)
         self.assertLess(self.place.created_at, us.created_at)
         self.assertLess(self.place.updated_at, us.updated_at)
@@ -130,8 +151,9 @@ class TestPlace(unittest.TestCase):
             repr(self.place.created_at)), s)
         self.assertIn("'updated_at': {}".format(
             repr(self.place.updated_at)), s)
-        self.assertIn("'email': '{}'".format(self.place.email), s)
-        self.assertIn("'password': '{}'".format(self.place.password), s)
+        self.assertIn("'city_id': '{}'".format(self.place.city_id), s)
+        self.assertIn("'user_id': '{}'".format(self.place.user_id), s)
+        self.assertIn("'name': '{}'".format(self.place.name), s)
 
     @unittest.skipIf(os.getenv("HBNB_ENV") is not None, "Testing DBStorage")
     def test_save_filestorage(self):
@@ -146,16 +168,19 @@ class TestPlace(unittest.TestCase):
     def test_save_dbstorage(self):
         """Test save method with DBStorage."""
         old = self.place.updated_at
+        self.state.save()
+        self.city.save()
+        self.user.save()
         self.place.save()
         self.assertLess(old, self.place.updated_at)
-        db = MySQLdb.connect(place="hbnb_test",
+        db = MySQLdb.connect(user="hbnb_test",
                              passwd="hbnb_test_pwd",
                              db="hbnb_test_db")
         cursor = db.cursor()
         cursor.execute("SELECT * \
                           FROM `places` \
-                         WHERE BINARY city_id = '{}'".
-                       format(self.place.city_id))
+                         WHERE BINARY name = '{}'".
+                       format(self.place.name))
         query = cursor.fetchall()
         self.assertEqual(1, len(query))
         self.assertEqual(self.place.id, query[0][0])
@@ -171,8 +196,9 @@ class TestPlace(unittest.TestCase):
                          place_dict["created_at"])
         self.assertEqual(self.place.updated_at.isoformat(),
                          place_dict["updated_at"])
-        self.assertEqual(self.place.email, place_dict["email"])
-        self.assertEqual(self.place.password, place_dict["password"])
+        self.assertEqual(self.place.city_id, place_dict["city_id"])
+        self.assertEqual(self.place.user_id, place_dict["user_id"])
+        self.assertEqual(self.place.name, place_dict["name"])
 
 
 if __name__ == "__main__":

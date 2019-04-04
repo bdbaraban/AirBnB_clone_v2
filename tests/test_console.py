@@ -3,6 +3,7 @@
 import os
 import pep8
 import unittest
+import models
 from unittest.mock import patch
 from io import StringIO
 from console import HBNBCommand
@@ -38,6 +39,7 @@ class TestHBNBCommand(unittest.TestCase):
         except IOError:
             pass
         del cls.HBNB
+        models.storage._DBStorage__session.close()
 
     def setUp(self):
         """Reset FileStorage objects dictionary."""

@@ -12,7 +12,6 @@ from models.state import State
 from models.engine.db_storage import DBStorage
 from models.engine.file_storage import FileStorage
 from sqlalchemy.exc import OperationalError
-from sqlalchemy.orm import scoped_session
 from sqlalchemy.orm import sessionmaker
 
 
@@ -40,9 +39,7 @@ class TestCity(unittest.TestCase):
             return
         cls.dbstorage = DBStorage()
         Base.metadata.create_all(cls.dbstorage._DBStorage__engine)
-        session_factory = sessionmaker(bind=cls.dbstorage._DBStorage__engine,
-                                       expire_on_commit=False)
-        Session = scoped_session(session_factory)
+        Session = sessionmaker(bind=cls.dbstorage._DBStorage__engine)
         cls.dbstorage._DBStorage__session = Session()
 
     @classmethod

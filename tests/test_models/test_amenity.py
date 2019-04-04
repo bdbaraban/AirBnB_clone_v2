@@ -5,12 +5,12 @@ import pep8
 import MySQLdb
 import unittest
 from datetime import datetime
-from models.base_model import Base, BaseModel
+from models.base_model import Base
+from models.base_model import BaseModel
 from models.amenity import Amenity
 from models.engine.db_storage import DBStorage
 from models.engine.file_storage import FileStorage
 from sqlalchemy.exc import OperationalError
-from sqlalchemy.orm import scoped_session
 from sqlalchemy.orm import sessionmaker
 
 
@@ -20,6 +20,7 @@ class TestAmenity(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Amenity testing setup.
+
         Temporarily renames any existing file.json.
         Resets FileStorage objects dictionary.
         Creates FileStorage, DBStorage and Amenity instances for testing.
@@ -36,9 +37,7 @@ class TestAmenity(unittest.TestCase):
             return
         cls.dbstorage = DBStorage()
         Base.metadata.create_all(cls.dbstorage._DBStorage__engine)
-        session_factory = sessionmaker(bind=cls.dbstorage._DBStorage__engine,
-                                       expire_on_commit=False)
-        Session = scoped_session(session_factory)
+        Session = sessionmaker(bind=cls.dbstorage._DBStorage__engine)
         cls.dbstorage._DBStorage__session = Session()
 
     @classmethod

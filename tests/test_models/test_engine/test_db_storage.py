@@ -12,7 +12,6 @@ from models.amenity import Amenity
 from models.place import Place
 from models.review import Review
 from models.engine.db_storage import DBStorage
-from sqlalchemy.orm import scoped_session
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.session import Session
 from sqlalchemy.engine.base import Engine
@@ -32,9 +31,7 @@ class TestDBStorage(unittest.TestCase):
             return
         cls.storage = DBStorage()
         Base.metadata.create_all(cls.storage._DBStorage__engine)
-        session_factory = sessionmaker(bind=cls.storage._DBStorage__engine,
-                                       expire_on_commit=False)
-        Session = scoped_session(session_factory)
+        Session = sessionmaker(bind=cls.storage._DBStorage__engine)
         cls.storage._DBStorage__session = Session()
         cls.state = State(name="California")
         cls.storage._DBStorage__session.add(cls.state)

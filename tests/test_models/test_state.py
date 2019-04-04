@@ -10,7 +10,6 @@ from models.state import State
 from models.engine.db_storage import DBStorage
 from models.engine.file_storage import FileStorage
 from sqlalchemy.exc import OperationalError
-from sqlalchemy.orm import scoped_session
 from sqlalchemy.orm import sessionmaker
 
 
@@ -32,16 +31,12 @@ class TestState(unittest.TestCase):
         FileStorage._FileStorage__objects = {}
         cls.filestorage = FileStorage()
         cls.state = State(name="California")
-        key = "{}.{}".format(type(cls.state).__name__, cls.state)
-        cls.filestorage._FileStorage__objects[key] = cls.state
 
         if os.getenv("HBNB_ENV") is None:
             return
         cls.dbstorage = DBStorage()
         Base.metadata.create_all(cls.dbstorage._DBStorage__engine)
-        session_factory = sessionmaker(bind=cls.dbstorage._DBStorage__engine,
-                                       expire_on_commit=False)
-        Session = scoped_session(session_factory)
+        Session = sessionmaker(bind=cls.dbstorage._DBStorage__engine)
         cls.dbstorage._DBStorage__session = Session()
 
     @classmethod
@@ -145,7 +140,7 @@ class TestState(unittest.TestCase):
         cursor = db.cursor()
         cursor.execute("SELECT * \
                           FROM `states` \
-                         WHERE BINARY name = '{}'".\
+                         WHERE BINARY name = '{}'".
                        format(self.state.name))
         query = cursor.fetchall()
         self.assertEqual(1, len(query))

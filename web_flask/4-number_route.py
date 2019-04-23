@@ -10,6 +10,7 @@ Routes:
     /number/<n>: Displays 'n is a number' only if <n> is an integer.
 """
 from flask import Flask
+from flask import abort
 
 app = Flask(__name__)
 
@@ -52,6 +53,8 @@ def number(n):
     """Displays 'n is a number' only if n is an integer."""
     if type(eval(n)) == int:
         return "{} is a number".format(n)
+    else:
+        abort(404)
 
 
 if __name__ == "__main__":

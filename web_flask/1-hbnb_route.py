@@ -24,4 +24,4 @@ def hbnb():
 
 
 if __name__ == "__main__":
-    app.run(hosts="0.0.0.0")
+    app.run(host="0.0.0.0")

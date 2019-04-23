@@ -61,7 +61,7 @@ class Place(BaseModel, Base):
                              viewonly=False)
     amenity_ids = []
 
-    if getenv("HBNB_TYPE_STORAGE", None) is None:
+    if getenv("HBNB_TYPE_STORAGE", None) != "db":
         @property
         def reviews(self):
             """Get a list of all linked Reviews."""

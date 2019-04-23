@@ -2,12 +2,12 @@
 """Defines the FileStorage class."""
 import json
 from models.base_model import BaseModel
-from models.user import User
-from models.state import State
-from models.city import City
 from models.amenity import Amenity
+from models.city import City
 from models.place import Place
 from models.review import Review
+from models.state import State
+from models.user import User
 
 
 class FileStorage:
@@ -25,8 +25,11 @@ class FileStorage:
         """Return a dictionary of instantiated objects in __objects.
 
         If a cls is specified, returns a dictionary of objects of that type.
-        Otherwise, returns the __objects dictionary."""
+        Otherwise, returns the __objects dictionary.
+        """
         if cls is not None:
+            if type(cls) == str:
+                cls = eval(cls)
             cls_dict = {}
             for k, v in self.__objects.items():
                 if type(v) == cls:
@@ -61,3 +64,7 @@ class FileStorage:
             del self.__objects["{}.{}".format(type(obj).__name__, obj.id)]
         except (AttributeError, KeyError):
             pass
+
+    def close(self):
+        """Call the reload method."""
+        self.reload()

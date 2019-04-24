@@ -268,15 +268,12 @@ aa229cbb-5b19-4c32-8562-f90a3437d301
 ```
 
 #### update
-* Usage: `update <class> <id> <attribute name> "<attribute value>"` or
-`<class>.update(<id>, <attribute name>, <attribute value>)` or `<class>.update(
-<id>, <attribute dictionary>)`.
+* Usage: `update <class> <id> <attribute name> "<attribute value>"`
 
 Updates a class instance based on a given id with a given key/value attribute
 pair or dictionary of attribute pairs. If `update` is called with a single
 key/value attribute pair, only "simple" attributes can be updated (ie. not
-`id`, `created_at`, and `updated_at`). However, any attribute can be updated by
-providing a dictionary.
+`id`, `created_at`, and `updated_at`).
 
 ```
 $ ./console.py
@@ -289,22 +286,6 @@ $ ./console.py
 2019, 2, 17, 21, 54, 39, 234382), 'first_name': 'Holberton', 'updated_at': date
 time.datetime(2019, 2, 17, 21, 54, 39, 234382), 'id': '6f348019-0499-420f-8eec-
 ef0fdc863c02'}
-(hbnb)
-(hbnb) User.update(6f348019-0499-420f-8eec-ef0fdc863c02, address, "98 Mission S
-t")
-(hbnb) User.show(6f348019-0499-420f-8eec-ef0fdc863c02)
-[User] (6f348019-0499-420f-8eec-ef0fdc863c02) {'created_at': datetime.datetime(
-2019, 2, 17, 21, 54, 39, 234382), 'address': '98 Mission St', 'first_name': 'Ho
-lberton', 'updated_at': datetime.datetime(2019, 2, 17, 21, 54, 39, 234382), 'id
-': '6f348019-0499-420f-8eec-ef0fdc863c02'}
-(hbnb)
-(hbnb) User.update(6f348019-0499-420f-8eec-ef0fdc863c02, {'email': 'holberton@h
-olberton.com', 'last_name': 'School'})
-[User] (6f348019-0499-420f-8eec-ef0fdc863c02) {'email': 'holberton@holberton.co
-m', 'first_name': 'Holberton', 'updated_at': datetime.datetime(2019, 2, 17, 21,
-54, 39, 234382), 'address': '98 Mission St', 'last_name': 'School', 'id': '6f34
-8019-0499-420f-8eec-ef0fdc863c02', 'created_at': datetime.datetime(2019, 2, 17,
-21, 54, 39, 234382)}
 (hbnb)
 ```
 

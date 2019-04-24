@@ -56,8 +56,8 @@
   border: 1px solid #ddd;
   border-radius: 4px;
   display: none;
-	max-height: 300px;
-	overflow-y: scroll;
+  max-height: 300px;
+  overflow-y: scroll;
   position: absolute;
   width: 100%;
 }
@@ -70,7 +70,7 @@
 
 /* Locations list style */
 .filters .locations ul {
-	margin: 12px auto 12px 30px;
+  margin: 12px auto 12px 30px;
 }
 
 /* Locations list element margin */

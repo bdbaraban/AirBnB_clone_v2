@@ -18,9 +18,55 @@ HolbertonBnB is still in active development, with complete functionality set to
 deploy in the coming month:
 
 * Complete integration of a RESTful API
-* Full deployment of static front-end using Flask
+* Full configuration of website with domain name
 * Serving of dynamic content using JavaScript
-	
+
+---
+## NOTE TO 2019 LYFT SOFTWARE ENGINEERING APPRENTICESHIP RECRUITER
+
+This web app has been the capstone project of my full-stack education at
+Holberton School and I want to show it off as a demonstration of all the
+skills I've learned at this school.
+
+With that said, I must clarify that it is not complete. As mentioned, the
+clone is a work-in-progress, with full deployment as a RESTful API still to
+come. Finishing touches will be occurring over the next month.
+
+Recognizing that I am sharing a near-completed project, I additionally put
+together a small Flask app according to the specifications described in the
+application. Please take a look at this separate repository here:
+
+https://github.com/bdbaraban/lyft_apprenticeship_application
+
+Nonetheless, allow me to talk a little more about this AirBnB clone. This
+repository is the second iteration of the project. In the first version
+(viewable [here](https://github.com/bdbaraban/AirBnB_clone)), I, together
+with a cohort mate, built up the initial file storage back-end and
+console from scratch. We pair programmed for most all of this version one work.
+
+In this second iteration of the project, I, together with a new partner,
+inherited a different version of the same back-end written by a pair of
+Holberton School students from an older cohort. We then pair programmed
+to build up the database storage engine of the back-end.
+
+In between each of versions, we put together an entire CSS-styled HTML web page
+for the project. This front-end development was coded independently, although
+the HTML files I personally wrote are only posted in
+[version one](https://github.com/bdbaraban/AirBnB_clone) (the
+[web_static](./web_static) folder in this directory was included in the
+fork). Addtionally, all Shell, Puppet, and Fabric deployment scripts/manifests
+were coded myself.
+
+The README's in both repositories were almost exclusively written myself.
+
+I hope this helps clear things up. I apologize for the confusing versioning, but
+the takeaway is that I've been directly involved in coding at least _an_ implementation
+of everything in this repository. And hey, software development is no fun without
+some confusing version control, right? :sweat-smile: :joy: :sob:
+
+Please let me know if you have any questions!
+---
+
 ### Classes :cl:
 
 HolbertonBnB supports the following classes:

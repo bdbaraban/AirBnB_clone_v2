@@ -21,6 +21,11 @@ deploy in the coming month:
 * Full configuration of website with domain name
 * Serving of dynamic content using JavaScript
 
+<p align="center">
+  <img src="https://github.com/bdbaraban/AirBnB_clone_v2/blob/master/assets/hbnb_stack.png"
+	    alt="HolbertonBnB stack">
+</p>
+
 ---
 
 ## NOTE TO 2019 LYFT SOFTWARE ENGINEERING APPRENTICESHIP RECRUITER

@@ -31,9 +31,10 @@ skills I've learned at this school.
 
 With that said, I must clarify that it is not complete. As mentioned, the
 clone is a work-in-progress, with full deployment as a RESTful API still to
-come. Finishing touches will be occurring over the next month.
+come. Finishing touches will be occurring over the next month, my final at
+Holberton.
 
-Recognizing that I am sharing a near-completed project, I additionally put
+Recognizing that I am sharing a near-complete project, I additionally put
 together a small Flask app according to the specifications described in the
 application. Please take a look at this separate repository here:
 
@@ -47,10 +48,10 @@ console from scratch. We pair programmed for most all of this version one work.
 
 In this second iteration of the project, I, together with a new partner,
 inherited a different version of the same back-end written by a pair of
-Holberton School students from an older cohort. We then pair programmed
+Holberton students from an older cohort. We then pair programmed
 to build up the database storage engine of the back-end.
 
-In between each of versions, we put together an entire CSS-styled HTML web page
+In between each version, I put together an entire CSS-styled HTML web page
 for the project. This front-end development was coded independently, although
 the HTML files I personally wrote are only posted in
 [version one](https://github.com/bdbaraban/AirBnB_clone) (the
@@ -68,6 +69,12 @@ some confusing version control, right? :sweat_smile: :sob:
 Please let me know if you have any questions!
 
 ---
+
+### Static :page_facing_up:
+
+The front-end of HolbertonBnB was designed from scratch using HTML5/CSS3 pages
+integrated using Flask. While the front-end has not yet been officially deployed,
+screenshots are viewable in the README of the [web_flask](./web_flask) directory.
 
 ### Classes :cl:
 

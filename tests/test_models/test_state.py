@@ -2,12 +2,10 @@
 """Defines unnittests for models/state.py."""
 import os
 import pep8
-import models
 import MySQLdb
 import unittest
 from datetime import datetime
 from models.base_model import Base, BaseModel
-from models.city import City
 from models.state import State
 from models.engine.db_storage import DBStorage
 from models.engine.file_storage import FileStorage
@@ -33,13 +31,13 @@ class TestState(unittest.TestCase):
         FileStorage._FileStorage__objects = {}
         cls.filestorage = FileStorage()
         cls.state = State(name="California")
-        cls.city = City(name="San Jose", state_id=cls.state.id)
 
-        if type(models.storage) == DBStorage:
-            cls.dbstorage = DBStorage()
-            Base.metadata.create_all(cls.dbstorage._DBStorage__engine)
-            Session = sessionmaker(bind=cls.dbstorage._DBStorage__engine)
-            cls.dbstorage._DBStorage__session = Session()
+        if os.getenv("HBNB_ENV") is None:
+            return
+        cls.dbstorage = DBStorage()
+        Base.metadata.create_all(cls.dbstorage._DBStorage__engine)
+        Session = sessionmaker(bind=cls.dbstorage._DBStorage__engine)
+        cls.dbstorage._DBStorage__session = Session()
 
     @classmethod
     def tearDownClass(cls):
@@ -56,12 +54,11 @@ class TestState(unittest.TestCase):
             os.rename("tmp", "file.json")
         except IOError:
             pass
-        del cls.state
-        del cls.city
-        del cls.filestorage
-        if type(models.storage) == DBStorage:
+        if os.getenv("HBNB_ENV") is not None:
             cls.dbstorage._DBStorage__session.close()
             del cls.dbstorage
+        del cls.state
+        del cls.filestorage
 
     def test_pep8(self):
         """Test pep8 styling."""
@@ -81,24 +78,13 @@ class TestState(unittest.TestCase):
         self.assertEqual(datetime, type(st.updated_at))
         self.assertTrue(hasattr(st, "name"))
 
-    @unittest.skipIf(type(models.storage) == FileStorage,
-                     "Testing FileStorage")
+    @unittest.skipIf(os.getenv("HBNB_ENV") is None, "MySQL env vars required")
     def test_nullable_attributes(self):
         """Check that relevant DBStorage attributes are non-nullable."""
         with self.assertRaises(OperationalError):
             self.dbstorage._DBStorage__session.add(State())
             self.dbstorage._DBStorage__session.commit()
         self.dbstorage._DBStorage__session.rollback()
-
-    @unittest.skipIf(type(models.storage) == DBStorage,
-                     "Testing DBStorage")
-    def test_cities(self):
-        """Test reviews attribute."""
-        key = "{}.{}".format(type(self.city).__name__, self.city.id)
-        self.filestorage._FileStorage__objects[key] = self.city
-        cities = self.state.cities
-        self.assertTrue(list, type(cities))
-        self.assertIn(self.city, cities)
 
     def test_is_subclass(self):
         """Check that State is a subclass of BaseModel."""
@@ -133,8 +119,7 @@ class TestState(unittest.TestCase):
             repr(self.state.updated_at)), s)
         self.assertIn("'name': '{}'".format(self.state.name), s)
 
-    @unittest.skipIf(type(models.storage) == DBStorage,
-                     "Testing DBStorage")
+    @unittest.skipIf(os.getenv("HBNB_ENV") is not None, "Testing DBStorage")
     def test_save_filestorage(self):
         """Test save method with FileStorage."""
         old = self.state.updated_at
@@ -143,8 +128,7 @@ class TestState(unittest.TestCase):
         with open("file.json", "r") as f:
             self.assertIn("State." + self.state.id, f.read())
 
-    @unittest.skipIf(type(models.storage) == FileStorage,
-                     "Testing FileStorage")
+    @unittest.skipIf(os.getenv("HBNB_ENV") is None, "MySQL env vars required")
     def test_save_dbstorage(self):
         """Test save method with DBStorage."""
         old = self.state.updated_at

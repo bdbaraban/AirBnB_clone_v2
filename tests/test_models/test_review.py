@@ -2,7 +2,6 @@
 """Defines unnittests for models/review.py."""
 import os
 import pep8
-import models
 import MySQLdb
 import unittest
 from datetime import datetime
@@ -43,11 +42,12 @@ class TestReview(unittest.TestCase):
         cls.review = Review(text="stellar", place_id=cls.place.id,
                             user_id=cls.user.id)
 
-        if type(models.storage) == DBStorage:
-            cls.dbstorage = DBStorage()
-            Base.metadata.create_all(cls.dbstorage._DBStorage__engine)
-            Session = sessionmaker(bind=cls.dbstorage._DBStorage__engine)
-            cls.dbstorage._DBStorage__session = Session()
+        if os.getenv("HBNB_ENV") is None:
+            return
+        cls.dbstorage = DBStorage()
+        Base.metadata.create_all(cls.dbstorage._DBStorage__engine)
+        Session = sessionmaker(bind=cls.dbstorage._DBStorage__engine)
+        cls.dbstorage._DBStorage__session = Session()
 
     @classmethod
     def tearDownClass(cls):
@@ -63,15 +63,15 @@ class TestReview(unittest.TestCase):
             os.rename("tmp", "file.json")
         except IOError:
             pass
+        if os.getenv("HBNB_ENV") is not None:
+            cls.dbstorage._DBStorage__session.close()
+            del cls.dbstorage
         del cls.state
         del cls.city
         del cls.user
         del cls.place
         del cls.review
         del cls.filestorage
-        if type(models.storage) == DBStorage:
-            cls.dbstorage._DBStorage__session.close()
-            del cls.dbstorage
 
     def test_pep8(self):
         """Test pep8 styling."""
@@ -94,8 +94,7 @@ class TestReview(unittest.TestCase):
         self.assertTrue(hasattr(us, "place_id"))
         self.assertTrue(hasattr(us, "user_id"))
 
-    @unittest.skipIf(type(models.storage) == FileStorage,
-                     "Testing FileStorage")
+    @unittest.skipIf(os.getenv("HBNB_ENV") is None, "MySQL env vars required")
     def test_nullable_attributes(self):
         """Test that email attribute is non-nullable."""
         with self.assertRaises(OperationalError):
@@ -148,8 +147,7 @@ class TestReview(unittest.TestCase):
         self.assertIn("'place_id': '{}'".format(self.review.place_id), s)
         self.assertIn("'user_id': '{}'".format(self.review.user_id), s)
 
-    @unittest.skipIf(type(models.storage) == DBStorage,
-                     "Testing DBStorage")
+    @unittest.skipIf(os.getenv("HBNB_ENV") is not None, "Testing DBStorage")
     def test_save_filestorage(self):
         """Test save method with FileStorage."""
         old = self.review.updated_at
@@ -158,8 +156,7 @@ class TestReview(unittest.TestCase):
         with open("file.json", "r") as f:
             self.assertIn("Review." + self.review.id, f.read())
 
-    @unittest.skipIf(type(models.storage) == FileStorage,
-                     "Testing FileStorage")
+    @unittest.skipIf(os.getenv("HBNB_ENV") is None, "MySQL env vars required")
     def test_save_dbstorage(self):
         """Test save method with DBStorage."""
         old = self.review.updated_at

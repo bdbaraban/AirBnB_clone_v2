@@ -61,7 +61,7 @@ class Place(BaseModel, Base):
                              viewonly=False)
     amenity_ids = []
 
-    if getenv("HBNB_TYPE_STORAGE", None) != "db":
+    if getenv("HBNB_TYPE_STORAGE", None) is None:
         @property
         def reviews(self):
             """Get a list of all linked Reviews."""
@@ -83,4 +83,4 @@ class Place(BaseModel, Base):
         @amenities.setter
         def amenities(self, value):
             if type(value) == Amenity:
-                self.amenity_ids.append(value.id)
+                self.amenity_ids.append(value)

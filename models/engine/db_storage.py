@@ -3,12 +3,12 @@
 from os import getenv
 from models.base_model import Base
 from models.base_model import BaseModel
-from models.amenity import Amenity
 from models.city import City
-from models.place import Place
-from models.review import Review
 from models.state import State
 from models.user import User
+from models.amenity import Amenity
+from models.review import Review
+from models.place import Place
 from sqlalchemy import create_engine
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm import scoped_session
@@ -53,8 +53,6 @@ class DBStorage:
             objs.extend(self.__session.query(Review).all())
             objs.extend(self.__session.query(Amenity).all())
         else:
-            if type(cls) == str:
-                cls = eval(cls)
             objs = self.__session.query(cls)
         return {"{}.{}".format(type(o).__name__, o.id): o for o in objs}
 
@@ -78,7 +76,3 @@ class DBStorage:
                                        expire_on_commit=False)
         Session = scoped_session(session_factory)
         self.__session = Session()
-
-    def close(self):
-        """Close the working SQLAlchemy session."""
-        self.__session.close()
